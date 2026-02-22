@@ -33,22 +33,23 @@ def main():
     
     print("-" * 50)
 
-    # 2. NVD CVEs - Publicly available, but may hit rate limit without key
+    # 2. NVD CVEs - Fetch more to see if they are in CISA KEV
     nvd_ingestor = NVDIngestor()
-    nvd_cves = nvd_ingestor.fetch_recent_cves(limit=5)
+    nvd_cves = nvd_ingestor.fetch_recent_cves(limit=50) # Fetch 50 instead of 5
     if nvd_cves:
         logger.info(f"Saving {len(nvd_cves)} NVD CVEs to DB...")
         db_manager.save_multiple_cves(nvd_cves)
-        for cve in nvd_cves:
+        # Show first 5
+        for cve in nvd_cves[:5]:
             print(f"NVD CVE: {cve.id} - CVSS: {cve.cvss_score} - Published: {cve.published}")
 
     print("-" * 50)
 
-    # 3. AbuseIPDB - Requires API Key to work
+    # 3. AbuseIPDB - Using a known active scanner IP for demonstration
     abuse_ingestor = AbuseIPDBIngestor()
-    # Replace with a known malicious IP if you have a key to test
-    test_ip = "8.8.8.8" 
-    logger.info(f"Testing AbuseIPDB for {test_ip} (Will fail if no API Key provided)")
+    # 185.224.128.83 is often associated with SSH brute force attempts
+    test_ip = "185.224.128.83" 
+    logger.info(f"Testing AbuseIPDB for {test_ip} (Known scanner)")
     reputation = abuse_ingestor.check_ip(test_ip)
     if reputation:
         logger.info(f"Saving IP reputation for {test_ip} to DB...")

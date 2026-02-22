@@ -32,17 +32,31 @@ class NVDIngestor:
                 return metric_list[0].get("cvssData", {}).get("baseScore")
         return None
 
-    def fetch_recent_cves(self, limit: int = 10) -> List[CVEModel]:
+    def fetch_recent_cves(self, limit: int = 10, days: int = 30) -> List[CVEModel]:
+        from datetime import datetime, timedelta, timezone
+        
+        MAX_PER_PAGE = 2000
         all_cves = []
         start_index = 0
+        
+        # Calculate date range for real "recent" CVEs
+        end_date = datetime.now(timezone.utc)
+        start_date = end_date - timedelta(days=days)
+        
+        # NVD format requires exactly: 2023-01-01T00:00:00.000
+        # No 'Z' or '+00:00'
+        start_fmt = start_date.strftime("%Y-%m-%dT%H:%M:%S.000")
+        end_fmt = end_date.strftime("%Y-%m-%dT%H:%M:%S.000")
 
-        logger.info(f"Fetching up to {limit} CVEs from NVD (paginated)...")
+        logger.info(f"Fetching CVEs from {start_fmt} to {end_fmt} (limit: {limit})...")
 
         while len(all_cves) < limit:
             batch_size = min(self.MAX_PER_PAGE, limit - len(all_cves))
             params = {
                 "resultsPerPage": batch_size,
-                "startIndex": start_index
+                "startIndex": start_index,
+                "pubStartDate": start_fmt,
+                "pubEndDate": end_fmt
             }
             
             data = self.client.get(endpoint="", params=params)
