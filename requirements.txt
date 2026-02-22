@@ -1,0 +1,7 @@
+requests
+pydantic
+python-dotenv
+tenacity
+pytest
+pytest-mock
+requests-mock
