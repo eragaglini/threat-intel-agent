@@ -21,6 +21,14 @@ class KEVModel(BaseModel):
     due_date: datetime = Field(..., alias="dueDate")
     known_ransomware_campaign_use: str = Field(..., alias="knownRansomwareCampaignUse")
 
+class ReportModel(BaseModel):
+    reported_at: datetime = Field(..., alias="reportedAt")
+    comment: Optional[str] = None
+    categories: List[int] = []
+    reporter_id: int = Field(..., alias="reporterId")
+    reporter_country_code: Optional[str] = Field(None, alias="reporterCountryCode")
+    reporter_country_name: Optional[str] = Field(None, alias="reporterCountryName")
+
 class IPReputationModel(BaseModel):
     ip_address: str = Field(..., alias="ipAddress")
     is_public: bool = Field(..., alias="isPublic")
@@ -33,6 +41,7 @@ class IPReputationModel(BaseModel):
     domain: Optional[str] = Field(None)
     total_reports: int = Field(..., alias="totalReports")
     last_reported_at: Optional[datetime] = Field(None, alias="lastReportedAt")
+    reports: List[ReportModel] = []
 
 class EPSSModel(BaseModel):
     cve_id: str = Field(..., alias="cve")

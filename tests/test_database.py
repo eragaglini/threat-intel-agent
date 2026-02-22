@@ -88,3 +88,33 @@ def test_get_critical_exploited_cves(db_manager):
     assert len(critical) == 1
     assert critical[0]["id"] == "CVE-JOIN-1"
     assert critical[0]["vulnerability_name"] == "Exploited Vuln"
+
+def test_save_ip_reputation_with_reports(db_manager):
+    from src.ingestion.models import IPReputationModel, ReportModel
+    
+    report = ReportModel(
+        reportedAt=datetime.now(),
+        comment="Attacco SSH",
+        categories=[18, 22],
+        reporterId=123,
+        reporterCountryCode="IT"
+    )
+    
+    reputation = IPReputationModel(
+        ipAddress="1.1.1.1",
+        isPublic=True,
+        ipVersion=4,
+        abuseConfidenceScore=100,
+        totalReports=1,
+        lastReportedAt=datetime.now(),
+        reports=[report]
+    )
+    
+    db_manager.save_ip_reputation(reputation)
+    
+    with db_manager._get_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT reports_json FROM ip_reputation WHERE ip_address = '1.1.1.1'")
+        row = cursor.fetchone()
+        assert row is not None
+        assert "Attacco SSH" in row[0]

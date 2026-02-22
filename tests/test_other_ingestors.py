@@ -27,10 +27,10 @@ def test_cisa_kev_ingestor_success(requests_mock):
     assert len(results) == 1
     assert results[0].cve_id == "CVE-2023-1234"
 
-def test_abuse_ipdb_ingestor_success(requests_mock):
+def test_abuse_ipdb_ingestor_check_success(requests_mock):
     ingestor = AbuseIPDBIngestor(api_key="test_key")
     requests_mock.get(
-        ingestor.base_url,
+        f"{ingestor.base_url}/check",
         json={
             "data": {
                 "ipAddress": "1.2.3.4",
@@ -43,7 +43,8 @@ def test_abuse_ipdb_ingestor_success(requests_mock):
                 "isp": "ISP Name",
                 "domain": "example.com",
                 "totalReports": 50,
-                "lastReportedAt": "2023-10-01T12:00:00+00:00"
+                "lastReportedAt": "2023-10-01T12:00:00+00:00",
+                "reports": []
             }
         }
     )
@@ -51,6 +52,36 @@ def test_abuse_ipdb_ingestor_success(requests_mock):
     assert result is not None
     assert result.ip_address == "1.2.3.4"
     assert result.abuse_confidence_score == 100
+
+def test_abuse_ipdb_ingestor_blacklist_success(requests_mock):
+    ingestor = AbuseIPDBIngestor(api_key="test_key")
+    requests_mock.get(
+        f"{ingestor.base_url}/blacklist",
+        json={
+            "data": [
+                {
+                    "ipAddress": "1.2.3.4",
+                    "ipVersion": 4,
+                    "abuseConfidenceScore": 95,
+                    "countryCode": "US",
+                    "totalReports": 10,
+                    "lastReportedAt": "2023-10-01T12:00:00+00:00"
+                },
+                {
+                    "ipAddress": "5.6.7.8",
+                    "ipVersion": 4,
+                    "abuseConfidenceScore": 100,
+                    "countryCode": "CN",
+                    "totalReports": 50,
+                    "lastReportedAt": "2023-10-01T12:00:00+00:00"
+                }
+            ]
+        }
+    )
+    results = ingestor.fetch_blacklist(limit=2)
+    assert len(results) == 2
+    assert results[0].ip_address == "1.2.3.4"
+    assert results[1].abuse_confidence_score == 100
 
 def test_epss_ingestor_success(requests_mock):
     ingestor = EPSSIngestor()

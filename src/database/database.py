@@ -53,8 +53,7 @@ class DatabaseManager:
             )
 
             # Table for IP Reputation
-            cursor.execute(
-                """
+            cursor.execute("""
                 CREATE TABLE IF NOT EXISTS ip_reputation (
                     ip_address TEXT PRIMARY KEY,
                     is_public INTEGER,
@@ -67,12 +66,22 @@ class DatabaseManager:
                     domain TEXT,
                     total_reports INTEGER,
                     last_reported_at TEXT,
+                    reports_json TEXT,
                     fetched_at TEXT DEFAULT (datetime('now')),
                     updated_at TEXT DEFAULT (datetime('now'))
                 )
-            """
-            )
+            """)
 
+            # Table for EPSS
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS epss_scores (
+                    cve_id TEXT PRIMARY KEY,
+                    epss_score REAL,
+                    epss_percentile REAL,
+                    fetched_at TEXT DEFAULT (datetime('now'))
+                )
+            """)
+                        
             cursor.execute(
                 """
                 CREATE TABLE IF NOT EXISTS epss_scores (
@@ -105,13 +114,11 @@ class DatabaseManager:
             cursor.execute(f"PRAGMA table_info({table})")
             columns = [info[1] for info in cursor.fetchall()]
             if "fetched_at" not in columns:
-                cursor.execute(
-                    f"ALTER TABLE {table} ADD COLUMN fetched_at TEXT DEFAULT CURRENT_TIMESTAMP"
-                )
+                cursor.execute(f"ALTER TABLE {table} ADD COLUMN fetched_at TEXT DEFAULT CURRENT_TIMESTAMP")
             if "updated_at" not in columns:
-                cursor.execute(
-                    f"ALTER TABLE {table} ADD COLUMN updated_at TEXT DEFAULT CURRENT_TIMESTAMP"
-                )
+                cursor.execute(f"ALTER TABLE {table} ADD COLUMN updated_at TEXT DEFAULT CURRENT_TIMESTAMP")
+            if table == "ip_reputation" and "reports_json" not in columns:
+                cursor.execute("ALTER TABLE ip_reputation ADD COLUMN reports_json TEXT")
 
     def save_cve(self, cve: CVEModel):
         self.save_multiple_cves([cve])
@@ -212,6 +219,9 @@ class DatabaseManager:
                 rep.domain,
                 rep.total_reports,
                 rep.last_reported_at.isoformat() if rep.last_reported_at else None,
+                json.dumps([json.loads(r.model_dump_json(by_alias=True)) for r in rep.reports])
+                if rep.reports
+                else None
             )
             for rep in reputations
         ]
@@ -219,12 +229,13 @@ class DatabaseManager:
             INSERT INTO ip_reputation (
                 ip_address, is_public, ip_version, is_whitelisted, 
                 abuse_confidence_score, country_code, usage_type, isp, 
-                domain, total_reports, last_reported_at, fetched_at, updated_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))
+                domain, total_reports, last_reported_at, reports_json, fetched_at, updated_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))
             ON CONFLICT(ip_address) DO UPDATE SET
                 abuse_confidence_score = excluded.abuse_confidence_score,
                 total_reports = excluded.total_reports,
                 last_reported_at = excluded.last_reported_at,
+                reports_json = excluded.reports_json,
                 updated_at = datetime('now')
             WHERE excluded.last_reported_at > ip_reputation.last_reported_at 
                OR excluded.abuse_confidence_score != ip_reputation.abuse_confidence_score

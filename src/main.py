@@ -51,20 +51,19 @@ def main():
 
     print("-" * 50)
 
-    # 3. AbuseIPDB - Using a known active scanner IP for demonstration
+    # 3. AbuseIPDB - Fetching the actual BLACKLIST of malicious IPs
     abuse_ingestor = AbuseIPDBIngestor()
-    # 185.224.128.83 is often associated with SSH brute force attempts
-    test_ip = "185.224.128.83"
-    logger.info(f"Testing AbuseIPDB for {test_ip} (Known scanner)")
-    reputation = abuse_ingestor.check_ip(test_ip)
-    if reputation:
-        logger.info(f"Saving IP reputation for {test_ip} to DB...")
-        db_manager.save_ip_reputation(reputation)
-        print(
-            f"IP Reputation: {reputation.ip_address} - Score: {reputation.abuse_confidence_score} - Total Reports: {reputation.total_reports}"
-        )
+    logger.info("Fetching real-time blacklist from AbuseIPDB...")
+    blacklist = abuse_ingestor.fetch_blacklist(limit=10) # Recuperiamo i 10 peggiori ora
+    if blacklist:
+        logger.info(f"Saving {len(blacklist)} malicious IPs to DB...")
+        db_manager.save_multiple_ip_reputation(blacklist)
+        for ip in blacklist:
+            print(
+                f"BAD IP: {ip.ip_address} - Confidence: {ip.abuse_confidence_score}% - Reports: {ip.total_reports}"
+            )
     else:
-        print("AbuseIPDB reputation check skipped or failed (likely missing API Key).")
+        print("AbuseIPDB blacklist fetch skipped or failed (likely missing API Key).")
 
     print("-" * 50)
 
