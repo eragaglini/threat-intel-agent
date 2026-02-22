@@ -12,26 +12,29 @@ class EPSSIngestor:
         self.client = HTTPClient(base_url=self.url)
 
     def fetch_epss_data(self, cve_ids: List[str]) -> List[EPSSModel]:
-        logger.info("Fetching EPSS data...")
-        epss_json_response = self.client.get(
-            endpoint="", params={"cve_id": ",".join(cve_ids)}
-        )
-
-        if "data" not in epss_json_response:
-            logger.error("Failed to fetch EPSS data.")
-            return []
-
-        logger.info(f"Raw response contains {len(epss_json_response['data'])} entries")
-
-        epss_data = []
-        for data in epss_json_response["data"]:
-            try:
-                epss_data.append(EPSSModel(**data))
-            except (ValueError, KeyError, TypeError) as e:
-                logger.warning(
-                    f"Failed to parse EPSS data for {data.get('cve', 'unknown')}: {e}"
-                )
+        all_epss = []
+        batch_size = 100
+        
+        # Dividi in chunk da 100
+        for i in range(0, len(cve_ids), batch_size):
+            batch = cve_ids[i:i + batch_size]
+            logger.info(f"Fetching EPSS for batch {i//batch_size + 1} ({len(batch)} CVEs)...")
+            
+            response = self.client.get(
+                endpoint="",
+                params={"cve_id": ",".join(batch)}
+            )
+            
+            if not response or "data" not in response:
+                logger.warning(f"No data for batch {i//batch_size + 1}")
                 continue
-
-        logger.info(f"Successfully fetched {len(epss_data)} vulnerabilities from EPSS.")
-        return epss_data
+                
+            for entry in response["data"]:
+                try:
+                    all_epss.append(EPSSModel(**entry))
+                except (ValueError, KeyError, TypeError) as e:
+                    logger.warning(f"Failed to parse EPSS entry {entry.get('cve', 'unknown')}: {e}")
+                    continue
+        
+        logger.info(f"Successfully fetched {len(all_epss)} EPSS scores.")
+        return all_epss

@@ -1,4 +1,5 @@
 import pytest
+import re
 from src.ingestion.nvd import NVDIngestor
 
 @pytest.fixture
@@ -6,7 +7,6 @@ def nvd_ingestor():
     return NVDIngestor(api_key="test_key")
 
 def test_extract_cvss_score_priorities(nvd_ingestor):
-    # Test case: Multiple versions available, should pick 4.0
     metrics = {
         "cvssMetricV40": [{"cvssData": {"baseScore": 9.8}}],
         "cvssMetricV31": [{"cvssData": {"baseScore": 7.5}}],
@@ -15,24 +15,25 @@ def test_extract_cvss_score_priorities(nvd_ingestor):
     assert nvd_ingestor._extract_cvss_score(metrics) == 9.8
 
 def test_extract_cvss_score_fallback_v2(nvd_ingestor):
-    # Test case: Only v2 available
     metrics = {
         "cvssMetricV2": [{"cvssData": {"baseScore": 4.2}}]
     }
     assert nvd_ingestor._extract_cvss_score(metrics) == 4.2
 
 def test_extract_cvss_score_none(nvd_ingestor):
-    # Test case: No metrics available
     assert nvd_ingestor._extract_cvss_score({}) is None
 
 def test_fetch_recent_cves_pagination(nvd_ingestor, requests_mock, monkeypatch):
     # Force a small MAX_PER_PAGE to trigger pagination in the test
     monkeypatch.setattr(nvd_ingestor, "MAX_PER_PAGE", 2)
     
-    # Mocking NVD API for two pages of size 2
-    # Page 1
+    # Base NVD URL pattern
+    # We use regex to match the URL and ignore dynamic date parameters
+    url_pattern_1 = re.compile(r"https://services\.nvd\.nist\.gov/rest/json/cves/2\.0.*resultsPerPage=2.*startIndex=0.*")
+    url_pattern_2 = re.compile(r"https://services\.nvd\.nist\.gov/rest/json/cves/2\.0.*resultsPerPage=2.*startIndex=2.*")
+
     requests_mock.get(
-        "https://services.nvd.nist.gov/rest/json/cves/2.0?resultsPerPage=2&startIndex=0",
+        url_pattern_1,
         json={
             "totalResults": 4,
             "vulnerabilities": [
@@ -41,9 +42,9 @@ def test_fetch_recent_cves_pagination(nvd_ingestor, requests_mock, monkeypatch):
             ]
         }
     )
-    # Page 2
+    
     requests_mock.get(
-        "https://services.nvd.nist.gov/rest/json/cves/2.0?resultsPerPage=2&startIndex=2",
+        url_pattern_2,
         json={
             "totalResults": 4,
             "vulnerabilities": [
@@ -58,5 +59,4 @@ def test_fetch_recent_cves_pagination(nvd_ingestor, requests_mock, monkeypatch):
     assert len(results) == 4
     assert results[0].id == "CVE-1"
     assert results[3].id == "CVE-4"
-    # Ensure 2 separate API calls were made
     assert requests_mock.call_count == 2
