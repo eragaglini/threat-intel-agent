@@ -57,10 +57,10 @@ ABUSEIPDB_API_KEY=tua_chiave_necessaria_per_IP
 ### 3. Esecuzione
 ```bash
 # Esegui l'ingestion (Layer 1)
-python3 layer1/main.py
+python3 -m layer1.main
 
 # Esegui l'agente di analisi (Layer 2)
-python3 layer2/main.py
+python3 -m layer2.main
 
 # Esegui la suite di test
 pytest
