@@ -1,7 +1,7 @@
 import pytest
-from src.ingestion.cisa import CISAKEVIngestor
-from src.ingestion.abuse_ipdb import AbuseIPDBIngestor
-from src.ingestion.epss import EPSSIngestor
+from layer1.ingestion.cisa import CISAKEVIngestor
+from layer1.ingestion.abuse_ipdb import AbuseIPDBIngestor
+from layer1.ingestion.epss import EPSSIngestor
 
 def test_cisa_kev_ingestor_success(requests_mock):
     ingestor = CISAKEVIngestor()

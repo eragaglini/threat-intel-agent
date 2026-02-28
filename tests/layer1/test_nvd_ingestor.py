@@ -1,6 +1,6 @@
 import pytest
 import re
-from src.ingestion.nvd import NVDIngestor
+from layer1.ingestion.nvd import NVDIngestor
 
 @pytest.fixture
 def nvd_ingestor():

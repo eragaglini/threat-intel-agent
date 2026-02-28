@@ -1,8 +1,8 @@
 import os
 import logging
 from typing import List, Optional, Dict, Any
-from src.utils.http_client import HTTPClient
-from src.ingestion.models import CVEModel
+from layer1.utils.http_client import HTTPClient
+from layer1.ingestion.models import CVEModel
 from dotenv import load_dotenv
 
 load_dotenv()

@@ -1,40 +1,42 @@
 # Threat Intel Agent 🛡️
 
-Un agente di **Threat Intelligence** modulare progettato per automatizzare l'ingestione, la correlazione e l'analisi di indicatori di compromissione (IoC) e vulnerabilità di sicurezza.
+Un agente di **Threat Intelligence** modulare progettato per automatizzare l'ingestione, la correlazione e l'analisi di indicatori di compromissione (IoC) e vulnerabilità di sicurezza, potenziato da un'architettura a due livelli e un motore di ragionamento basato su AI.
 
 ---
 
 ## 🚀 Stato Attuale del Progetto
 
-Il progetto ha completato la **Fase 1 (Ingestion & Storage)**. Attualmente è in grado di:
+Il progetto ha completato la **Fase 2 (AI Reasoning & Enrichment)**. L'architettura è ora divisa in due livelli:
 
-### 📥 Ingestion Multi-Sorgente
+### 🏗️ Layer 1: Ingestion & Storage
 - **NVD (NIST):** Fetching paginato di CVE con supporto completo per CVSS v4.0, v3.1, v3.0 e v2.0.
 - **CISA KEV:** Monitoraggio delle vulnerabilità sfruttate attivamente nel mondo reale.
-- **AbuseIPDB:** Analisi della reputazione degli indirizzi IP per identificare attività malevole.
-- **EPSS (FIRST.org):** Integrazione del sistema di previsione della probabilità di exploit.
+- **AbuseIPDB:** Analisi della reputazione degli indirizzi IP.
+- **EPSS (FIRST.org):** Integrazione della probabilità di exploit.
+- **Persistenza:** Database **SQLite** locale ottimizzato con logica di Upsert.
 
-### 💾 Persistenza Ottimizzata
-- Database **SQLite** locale con schema indicizzato per ricerche veloci.
-- Logica di **Upsert (ON CONFLICT)**: i record vengono aggiornati solo se i dati in ingresso sono più recenti (`last_modified`), evitando scritture inutili.
-- Tracciamento temporale con `fetched_at` e `updated_at` per ogni record.
-
-### 🧪 Affidabilità & Qualità
-- Suite di **Unit Test** completa con `pytest` (mocking delle API per testare edge case senza consumare quote API reali).
-- Client HTTP resiliente con logica di **retry esponenziale** (via Tenacity).
+### 🧠 Layer 2: LangGraph Agentic Reasoning
+Un grafo di agenti intelligente che elabora le vulnerabilità attraverso:
+- **CVE Enrichment:** Espansione dei dettagli tecnici tramite LLM (Gemini).
+- **ATT&CK Mapping:** Mappatura automatica delle vulnerabilità alle tattiche e tecniche MITRE ATT&CK.
+- **Risk Scorer:** Calcolo di un punteggio di rischio dinamico basato su punteggi standard (CVSS, EPSS) e contesto reale (KEV).
+- **Critic Node:** Validazione e raffinamento autonomo delle analisi prodotte.
+- **Report Generator:** Generazione di report strutturati e pronti all'uso per i team di sicurezza.
 
 ---
 
-## 🏗️ Architettura & Stack Tecnico
+## 🛠️ Stack Tecnico
 
 - **Linguaggio:** Python 3.11+
+- **Agent Framework:** [LangGraph](https://langchain-ai.github.io/langgraph/)
+- **LLM Integration:** [LangChain Google GenAI](https://python.langchain.com/docs/integrations/chat/google_generative_ai/) (Gemini 2.0 Flash)
 - **Validazione Dati:** [Pydantic v2](https://docs.pydantic.dev/)
-- **Database:** SQLite (con supporto a transazioni atomiche `executemany`)
+- **Database:** SQLite
 - **Test:** Pytest, requests-mock, pytest-mock
 
 ---
 
-## 🛠️ Come Iniziare
+## 💻 Come Iniziare
 
 ### 1. Requisiti
 ```bash
@@ -46,29 +48,31 @@ pip install -r requirements.txt
 ### 2. Configurazione
 Crea un file `.env` nella root del progetto:
 ```env
+GOOGLE_API_KEY=tua_chiave_google_ai
 NVD_API_KEY=tua_chiave_opzionale
 ABUSEIPDB_API_KEY=tua_chiave_necessaria_per_IP
 ```
 
 ### 3. Esecuzione
 ```bash
-# Esegui l'ingestion dimostrativa
-PYTHONPATH=. python3 src/main.py
+# Esegui l'ingestion (Layer 1)
+python3 layer1/main.py
+
+# Esegui l'agente di analisi (Layer 2)
+python3 layer2/main.py
 
 # Esegui la suite di test
-PYTHONPATH=. pytest tests/
+pytest
 ```
 
 ---
 
 ## 🔮 Visione Futura (Roadmap)
 
-L'obiettivo finale è trasformare questo raccoglitore in un assistente decisionale intelligente:
-
-1.  **📊 Change Tracking (History):** Non solo l'ultimo stato, ma la storia dei cambiamenti (es. "Il CVSS di questa CVE è passato da 7 a 9").
-2.  **🔔 Notification Engine:** Alert automatici via Webhook o Email quando una vulnerabilità critica viene rilevata come "sfruttata attivamente" (CISA KEV).
-3.  **🧠 AI Integration (RAG):** Utilizzo di un **Vector Database** (es. ChromaDB) per permettere a un LLM (Gemini) di rispondere a domande complesse sui dati ingeriti in linguaggio naturale.
-4.  **🖥️ CLI Dashboard:** Un'interfaccia interattiva per interrogare rapidamente gli IoC senza scrivere SQL.
+1.  **📊 Change Tracking (History):** Monitoraggio evolutivo del punteggio CVSS e dello stato KEV.
+2.  **🔔 Notification Engine:** Alert automatici via Webhook o Email per vulnerabilità critiche.
+3.  **🧠 Advanced RAG:** Integrazione con un Vector Database per analisi contestuale su documenti interni.
+4.  **🖥️ Dashboard CLI:** Interfaccia interattiva per interrogare l'agente e visualizzare i report.
 
 ---
 *Per maggiori dettagli sulle convenzioni tecniche, consulta [GEMINI.md](./GEMINI.md).*

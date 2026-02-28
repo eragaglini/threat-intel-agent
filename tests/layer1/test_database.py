@@ -1,8 +1,8 @@
 import pytest
 import os
 import sqlite3
-from src.database.database import DatabaseManager
-from src.ingestion.models import CVEModel, KEVModel
+from layer1.database.database import DatabaseManager
+from layer1.ingestion.models import CVEModel, KEVModel
 from datetime import datetime
 
 @pytest.fixture
@@ -90,7 +90,7 @@ def test_get_critical_exploited_cves(db_manager):
     assert critical[0]["vulnerability_name"] == "Exploited Vuln"
 
 def test_save_ip_reputation_with_reports(db_manager):
-    from src.ingestion.models import IPReputationModel, ReportModel
+    from layer1.ingestion.models import IPReputationModel, ReportModel
     
     report = ReportModel(
         reportedAt=datetime.now(),

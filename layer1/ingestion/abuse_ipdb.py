@@ -1,8 +1,8 @@
 import os
 import logging
 from typing import Optional
-from src.utils.http_client import HTTPClient
-from src.ingestion.models import IPReputationModel
+from layer1.utils.http_client import HTTPClient
+from layer1.ingestion.models import IPReputationModel
 from dotenv import load_dotenv
 from typing import List
 

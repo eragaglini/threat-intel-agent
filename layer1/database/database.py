@@ -2,7 +2,7 @@ import sqlite3
 import json
 from datetime import datetime
 from typing import List, Optional, Dict, Any
-from src.ingestion.models import CVEModel, KEVModel, IPReputationModel, EPSSModel
+from layer1.ingestion.models import CVEModel, KEVModel, IPReputationModel, EPSSModel
 
 
 class DatabaseManager:

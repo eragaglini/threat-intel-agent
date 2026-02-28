@@ -1,6 +1,6 @@
 from typing import List, Optional
-from src.utils.http_client import HTTPClient
-from src.ingestion.models import EPSSModel
+from layer1.utils.http_client import HTTPClient
+from layer1.ingestion.models import EPSSModel
 import logging
 
 logger = logging.getLogger(__name__)
