@@ -1,9 +1,11 @@
 import logging
-from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_anthropic import ChatAnthropic
 from langchain_core.prompts import PromptTemplate
 from pydantic import BaseModel, Field
 from typing import List
 from layer2.models.state import AgentState, TTP
+from layer2.config import LLM_CONFIG, LLM_OPTIONS
+from layer2.utils.llm_invoker import invoke_chain_with_retry
 
 logger = logging.getLogger(__name__)
 
@@ -13,7 +15,10 @@ class TTPList(BaseModel):
 def attck_mapper_node(state: AgentState) -> AgentState:
     logger.info(f"--- ATT&CK MAPPER NODE for {state.get('cve_id')} ---")
     
-    llm = ChatGoogleGenerativeAI(model="gemini-2.0-flash", temperature=0)
+    llm = ChatAnthropic(
+        model=LLM_CONFIG["attck_mapping"], 
+        **LLM_OPTIONS
+    )
     structured_llm = llm.with_structured_output(TTPList)
     
     prompt = PromptTemplate.from_template(
@@ -29,7 +34,7 @@ def attck_mapper_node(state: AgentState) -> AgentState:
     enriched_data = str(state.get("enriched_data", {}))
     
     try:
-        result: TTPList = chain.invoke({"description": description, "enriched_data": enriched_data})
+        result: TTPList = invoke_chain_with_retry(chain, {"description": description, "enriched_data": enriched_data})
         state["ttp_mappings"] = [ttp.model_dump() for ttp in result.ttps]
         
         # Calculate overall mapping confidence safely

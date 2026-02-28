@@ -6,7 +6,7 @@ Agente di **Threat Intelligence** modulare progettato per l'ingestione, la corre
 ## 🏗️ Architecture & Stack
 - **Language:** Python 3.11+
 - **Agent Framework:** LangGraph (Stateful, multi-node reasoning)
-- **LLM:** Google Gemini 2.0 Flash (via LangChain)
+- **LLM:** Anthropic Claude 3.5 Sonnet & Claude 3 Haiku (via LangChain)
 - **Persistence:** SQLite (Schema indicizzato per performance $O(\log n)$)
 - **Data Validation:** Pydantic Models (v2)
 - **Ingestion:** Pattern Ingestor con client HTTP resiliente.
@@ -17,12 +17,13 @@ Agente di **Threat Intelligence** modulare progettato per l'ingestione, la corre
 - `layer2/graph.py`: Definizione del grafo LangGraph e degli stati.
 - `layer2/nodes/`: Implementazione dei nodi dell'agente (Enrichment, Scorer, Mapper, Critic).
 - `layer2/models/`: Modelli Pydantic per lo stato del grafo e l'output strutturato.
+- `layer2/config.py`: Configurazione centralizzata dei modelli LLM.
+- `layer2/utils/llm_invoker.py`: Utility per chiamate LLM resilienti con Tenacity (Retry).
 
 ## 🛠️ Key Conventions
-1. **Agentic Validation:** Ogni analisi prodotta da un nodo deve essere validata da un nodo `Critic` prima della finalizzazione.
-2. **Explicit SQL:** Tutte le query `INSERT` devono dichiarare esplicitamente le colonne.
-3. **Structured Output:** Gli LLM devono sempre restituire dati validabili tramite Pydantic.
-4. **State Management:** Lo stato del grafo (`AgentState`) è l'unica fonte di verità durante l'esecuzione dell'agente.
+1. **Centralized LLM Config:** Tutti i nodi devono utilizzare i modelli definiti in `layer2/config.py`.
+2. **Resilient LLM Calls:** Tutte le chiamate LLM devono passare attraverso `invoke_chain_with_retry` per gestire errori transitori.
+3. **Agentic Validation:** Ogni analisi prodotta da un nodo deve essere validata da un nodo `Critic`.
 
 ## 🚀 Execution Commands
 ```bash

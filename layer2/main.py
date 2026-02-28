@@ -18,8 +18,8 @@ logger = logging.getLogger(__name__)
 
 def main():
     load_dotenv()
-    if not os.getenv("GOOGLE_API_KEY"):
-        logger.error("GOOGLE_API_KEY is not set in .env")
+    if not os.getenv("ANTHROPIC_API_KEY"):
+        logger.error("ANTHROPIC_API_KEY is not set in .env")
         return
 
     db_manager = DatabaseManager(db_path="threat_intel.db")

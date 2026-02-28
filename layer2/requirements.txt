@@ -1,6 +1,7 @@
 langgraph
-langchain-google-genai
+langchain-anthropic
 langchain-core
 pydantic
 python-dotenv
 langgraph-checkpoint-sqlite
+tenacity

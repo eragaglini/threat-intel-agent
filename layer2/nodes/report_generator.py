@@ -1,15 +1,20 @@
 import logging
 import json
-from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_anthropic import ChatAnthropic
 from langchain_core.prompts import PromptTemplate
 from layer2.models.state import AgentState, Report
+from layer2.config import LLM_CONFIG, LLM_OPTIONS
+from layer2.utils.llm_invoker import invoke_chain_with_retry
 
 logger = logging.getLogger(__name__)
 
 def report_generator_node(state: AgentState) -> AgentState:
     logger.info(f"--- REPORT GENERATOR NODE for {state.get('cve_id')} ---")
     
-    llm = ChatGoogleGenerativeAI(model="gemini-2.0-flash", temperature=0)
+    llm = ChatAnthropic(
+        model=LLM_CONFIG["report_generation"], 
+        **LLM_OPTIONS
+    )
     structured_llm = llm.with_structured_output(Report)
     
     prompt = PromptTemplate.from_template(
@@ -30,7 +35,7 @@ def report_generator_node(state: AgentState) -> AgentState:
             "vulnerability_name": state.get("raw_data", {}).get("vulnerability_name")
         }
         
-        result: Report = chain.invoke({"state_data": json.dumps(state_data)})
+        result: Report = invoke_chain_with_retry(chain, {"state_data": json.dumps(state_data)})
         
         state["final_report"] = {
             "narrative": result.narrative,

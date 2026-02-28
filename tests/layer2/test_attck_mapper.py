@@ -32,7 +32,7 @@ def test_attck_mapper_success(monkeypatch):
 
     # 3. Patching Strategico
     # A. Patch della classe LLM
-    monkeypatch.setattr(attck_mapper_module, "ChatGoogleGenerativeAI", lambda **kwargs: mock_llm_instance)
+    monkeypatch.setattr(attck_mapper_module, "ChatAnthropic", lambda **kwargs: mock_llm_instance)
     
     # B. Patch dell'operatore PIPE del PromptTemplate
     # Quando LangChain fa `prompt | structured_llm`, forziamo il ritorno del nostro mock_chain
@@ -63,7 +63,7 @@ def test_attck_mapper_empty_safe(monkeypatch):
     mock_chain.invoke.return_value = TTPList(ttps=[])
     
     mock_llm_instance.with_structured_output.return_value = MagicMock()
-    monkeypatch.setattr(attck_mapper_module, "ChatGoogleGenerativeAI", lambda **kwargs: mock_llm_instance)
+    monkeypatch.setattr(attck_mapper_module, "ChatAnthropic", lambda **kwargs: mock_llm_instance)
 
     with patch("langchain_core.prompts.PromptTemplate.__or__", return_value=mock_chain):
         new_state = attck_mapper_node(state)

@@ -1,14 +1,19 @@
 import logging
-from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_anthropic import ChatAnthropic
 from langchain_core.prompts import PromptTemplate
 from layer2.models.state import AgentState, EnrichedData
+from layer2.config import LLM_CONFIG, LLM_OPTIONS
+from layer2.utils.llm_invoker import invoke_chain_with_retry
 
 logger = logging.getLogger(__name__)
 
 def cve_enrichment_node(state: AgentState) -> AgentState:
     logger.info(f"--- CVE ENRICHMENT NODE for {state.get('cve_id')} ---")
     
-    llm = ChatGoogleGenerativeAI(model="gemini-2.0-flash", temperature=0)
+    llm = ChatAnthropic(
+        model=LLM_CONFIG["enrichment"], 
+        **LLM_OPTIONS
+    )
     structured_llm = llm.with_structured_output(EnrichedData)
     
     prompt = PromptTemplate.from_template(
@@ -21,7 +26,7 @@ def cve_enrichment_node(state: AgentState) -> AgentState:
     
     try:
         raw_data_str = str(state["raw_data"])
-        result: EnrichedData = chain.invoke({"raw_data": raw_data_str})
+        result: EnrichedData = invoke_chain_with_retry(chain, {"raw_data": raw_data_str})
         
         state["enriched_data"] = result.model_dump()
         state["confidence_scores"]["enrichment"] = 0.9  # Assumed baseline confidence

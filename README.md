@@ -29,7 +29,8 @@ Un grafo di agenti intelligente che elabora le vulnerabilità attraverso:
 
 - **Linguaggio:** Python 3.11+
 - **Agent Framework:** [LangGraph](https://langchain-ai.github.io/langgraph/)
-- **LLM Integration:** [LangChain Google GenAI](https://python.langchain.com/docs/integrations/chat/google_generative_ai/) (Gemini 2.0 Flash)
+- **LLM Integration:** [LangChain Anthropic](https://python.langchain.com/docs/integrations/chat/anthropic/) (Claude 3.5 Sonnet & Haiku)
+- **Retry Logic:** [Tenacity](https://tenacity.readthedocs.io/) (Exponential backoff per API HTTP e LLM)
 - **Validazione Dati:** [Pydantic v2](https://docs.pydantic.dev/)
 - **Database:** SQLite
 - **Test:** Pytest, requests-mock, pytest-mock
@@ -48,7 +49,7 @@ pip install -r requirements.txt
 ### 2. Configurazione
 Crea un file `.env` nella root del progetto:
 ```env
-GOOGLE_API_KEY=tua_chiave_google_ai
+ANTHROPIC_API_KEY=tua_chiave_anthropic
 NVD_API_KEY=tua_chiave_opzionale
 ABUSEIPDB_API_KEY=tua_chiave_necessaria_per_IP
 ```

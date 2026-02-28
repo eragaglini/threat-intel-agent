@@ -32,7 +32,7 @@ def test_report_generator_success(monkeypatch):
 
     # 3. Patching
     # Patch dell'LLM nel modulo specifico
-    monkeypatch.setattr(report_module, "ChatGoogleGenerativeAI", lambda **kwargs: mock_llm_instance)
+    monkeypatch.setattr(report_module, "ChatAnthropic", lambda **kwargs: mock_llm_instance)
     
     # Patch del Pipe del PromptTemplate
     with patch("langchain_core.prompts.PromptTemplate.__or__", return_value=mock_chain):
@@ -61,7 +61,7 @@ def test_report_generator_failure(monkeypatch):
     mock_chain.invoke.side_effect = Exception("Generation failed")
     mock_llm_instance.with_structured_output.return_value = MagicMock()
 
-    monkeypatch.setattr(report_module, "ChatGoogleGenerativeAI", lambda **kwargs: mock_llm_instance)
+    monkeypatch.setattr(report_module, "ChatAnthropic", lambda **kwargs: mock_llm_instance)
 
     with patch("langchain_core.prompts.PromptTemplate.__or__", return_value=mock_chain):
         new_state = report_generator_node(state)

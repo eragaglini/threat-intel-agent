@@ -31,7 +31,7 @@ def test_cve_enrichment_success(monkeypatch):
 
     # 3. Patching
     # Patch della classe LLM nel modulo target
-    monkeypatch.setattr(enrichment_module, "ChatGoogleGenerativeAI", lambda **kwargs: mock_llm_instance)
+    monkeypatch.setattr(enrichment_module, "ChatAnthropic", lambda **kwargs: mock_llm_instance)
     
     # Patch dell'operatore pipe (|) del PromptTemplate per restituire la nostra catena mockata
     with patch("langchain_core.prompts.PromptTemplate.__or__", return_value=mock_chain):
@@ -61,7 +61,7 @@ def test_cve_enrichment_failure(monkeypatch):
     
     mock_llm_instance.with_structured_output.return_value = MagicMock()
 
-    monkeypatch.setattr(enrichment_module, "ChatGoogleGenerativeAI", lambda **kwargs: mock_llm_instance)
+    monkeypatch.setattr(enrichment_module, "ChatAnthropic", lambda **kwargs: mock_llm_instance)
 
     with patch("langchain_core.prompts.PromptTemplate.__or__", return_value=mock_chain):
         new_state = cve_enrichment_node(state)
