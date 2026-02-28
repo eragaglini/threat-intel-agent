@@ -155,3 +155,6 @@ threat_intel.db
 threat_intel.db-journal
 test_threat_intel.db
 GEMINI.md
+*.db
+*.db-shm
+*.db-wal

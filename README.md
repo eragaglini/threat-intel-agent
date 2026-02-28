@@ -17,7 +17,7 @@ Il progetto ha completato la **Fase 2 (AI Reasoning & Enrichment)**. L'architett
 
 ### 🧠 Layer 2: LangGraph Agentic Reasoning
 Un grafo di agenti intelligente che elabora le vulnerabilità attraverso:
-- **CVE Enrichment:** Espansione dei dettagli tecnici tramite LLM (Gemini).
+- **CVE Enrichment:** Espansione dei dettagli tecnici tramite LLM (Claude (Haiku)).
 - **ATT&CK Mapping:** Mappatura automatica delle vulnerabilità alle tattiche e tecniche MITRE ATT&CK.
 - **Risk Scorer:** Calcolo di un punteggio di rischio dinamico basato su punteggi standard (CVSS, EPSS) e contesto reale (KEV).
 - **Critic Node:** Validazione e raffinamento autonomo delle analisi prodotte.
@@ -75,5 +75,3 @@ pytest
 3.  **🧠 Advanced RAG:** Integrazione con un Vector Database per analisi contestuale su documenti interni.
 4.  **🖥️ Dashboard CLI:** Interfaccia interattiva per interrogare l'agente e visualizzare i report.
 
----
-*Per maggiori dettagli sulle convenzioni tecniche, consulta [GEMINI.md](./GEMINI.md).*
