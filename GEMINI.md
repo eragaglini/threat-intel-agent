@@ -15,7 +15,7 @@ Agente di **Threat Intelligence** modulare progettato per l'ingestione, la corre
 - `layer1/ingestion/`: Logica di fetching per NVD, CISA KEV, AbuseIPDB ed EPSS.
 - `layer1/database/`: Gestione persistenza e query di correlazione SQLite.
 - `layer2/graph.py`: Definizione del grafo LangGraph, stati e router.
-- `layer2/nodes/`: Implementazione dei nodi dell'agente (Enrichment, Scorer, Matcher, Mapper, Critic, Generator).
+- `layer2/nodes/`: Implementazione dei nodi dell'agente (`cve_enrichment`, `risk_scorer`, `asset_matcher`, `attck_mapper`, `critic`, `report_generator`, `save_report`).
 - `layer2/models/`: Modelli Pydantic per lo stato del grafo e l'output strutturato.
 - `layer2/config.py`: Configurazione centralizzata dei modelli LLM.
 - `layer2/utils/llm_invoker.py`: Utility per chiamate LLM resilienti con Tenacity (Retry).
@@ -27,7 +27,7 @@ Agente di **Threat Intelligence** modulare progettato per l'ingestione, la corre
 2. **Resilient LLM Calls:** Tutte le chiamate LLM devono passare attraverso `invoke_chain_with_retry`.
 3. **Agentic Validation:** Ogni analisi prodotta deve essere validata da un nodo `Critic` con supporto alla riflessione (`reflexion_count`).
 4. **State Merge:** I nodi devono restituire solo i campi aggiornati (dict) per permettere il merge automatico di LangGraph.
-5. **Asset-Centric Risk:** Lo score di rischio viene ricalcolato in base alla presenza di asset impattati.
+5. **Contextual Risk:** Lo score di rischio viene ricalcolato (`adjusted_risk_score`) in base alla presenza di asset impattati.
 
 ## 🚀 Execution Commands
 ```bash

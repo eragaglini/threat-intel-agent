@@ -1,78 +1,217 @@
 # Threat Intel Agent 🛡️
 
-Un agente di **Threat Intelligence** modulare progettato per automatizzare l'ingestione, la correlazione e l'analisi di indicatori di compromissione (IoC) e vulnerabilità di sicurezza, potenziato da un'architettura a due livelli e un motore di ragionamento basato su AI.
+Un agente di **Threat Intelligence** modulare che automatizza 
+ingestione, correlazione e analisi di vulnerabilità e indicatori 
+di compromissione, potenziato da un'architettura multi-layer e 
+un motore di ragionamento basato su AI (Claude, Anthropic).
+
+> **Nota:** Questo è un Proof of Concept sviluppato a scopo 
+> dimostrativo. Layer 1 e Layer 2 sono implementati e coperti 
+> da test. Layer 3 e Layer 4 sono progettati architetturalmente 
+> e in fase di sviluppo.
 
 ---
 
-## 🚀 Stato Attuale del Progetto
+## 🏗️ Architettura
 
-Il progetto ha completato la **Fase 2 (AI Reasoning & Enrichment)** con l'implementazione di un grafo agentico avanzato.
+```text
+┌─────────────────────────────────────────────────────────────┐
+│  Layer 1 — Data Ingestion                          [✅ LIVE] │
+│  NVD API → CISA KEV → AbuseIPDB → EPSS → SQLite            │
+└─────────────────────┬───────────────────────────────────────┘
+                      │
+┌─────────────────────▼───────────────────────────────────────┐
+│  Layer 2 — Agentic Reasoning (LangGraph)           [✅ LIVE] │
+│                                                             │
+│  cve_enrichment → risk_scorer → asset_matcher               │
+│       → attck_mapper → [critic] → report_generator          │
+│                            ↑           │                    │
+│                            └───────────┘                    │
+│                         (reflexion loop,                    │
+│                          max 2 cicli)                       │
+└─────────────────────┬───────────────────────────────────────┘
+                      │
+┌─────────────────────▼───────────────────────────────────────┐
+│  Layer 3 — Storage & Retrieval                  [📐 DESIGN] │
+│  ChromaDB · sentence-transformers · RAG su NIST/ATT&CK      │
+└─────────────────────┬───────────────────────────────────────┘
+                      │
+┌─────────────────────▼───────────────────────────────────────┐
+│  Layer 4 — Output STIX 2.1                      [📐 DESIGN] │
+│  stix2 · Bundle CVE/TTP/Report · Export TAXII-ready         │
+└─────────────────────────────────────────────────────────────┘
+```
 
-### 🏗️ Layer 1: Ingestion & Storage
-- **NVD (NIST):** Fetching paginato di CVE con supporto completo per CVSS v4.0, v3.1, v3.0 e v2.0.
-- **CISA KEV:** Monitoraggio delle vulnerabilità sfruttate attivamente nel mondo reale.
-- **AbuseIPDB:** Analisi della reputazione degli indirizzi IP.
-- **EPSS (FIRST.org):** Integrazione della probabilità di exploit.
-- **Persistenza:** Database **SQLite** locale ottimizzato con logica di Upsert.
+---
 
-### 🧠 Layer 2: LangGraph Agentic Reasoning
-Un grafo di agenti intelligente che elabora le vulnerabilità attraverso un flusso di lavoro strutturato:
-1.  **CVE Enrichment:** Espansione dei dettagli tecnici tramite Claude 3 Haiku.
-2.  **Risk Scorer:** Calcolo di un punteggio di rischio dinamico basato su CVSS, EPSS e dati KEV.
-3.  **Asset Matching:** Correlazione automatica con l'inventario asset aziendale (`assets.json`) e ricalcolo del rischio contestuale.
-4.  **ATT&CK Mapping:** Mappatura deterministica e probabilistica alle tecniche MITRE ATT&CK.
-5.  **Critic Node:** Validazione autonoma con cicli di riflessione (fino a 2 tentativi) in caso di bassa confidenza o errori.
-6.  **Report Generator:** Generazione di report narrativi e strutturati per SOC analysts.
-7.  **Persistence:** Salvataggio automatico dei report in formato JSON nella directory `reports/`.
+## ✅ Layer 1: Data Ingestion & Storage
+
+Pipeline modulare di acquisizione dati da fonti pubbliche:
+
+| Sorgente | Dati raccolti |
+|:---------|:--------------|
+| **NVD (NIST)** | CVE feed con CVSS v2/v3/v4, descrizioni, riferimenti |
+| **CISA KEV** | Vulnerabilità sfruttate attivamente, flag ransomware |
+| **AbuseIPDB** | Reputazione IP, confidence score, categorie abuso |
+| **EPSS (FIRST.org)** | Probabilità di exploit nei prossimi 30 giorni |
+
+**Caratteristiche implementative:**
+- **Upsert intelligente** su SQLite con `ON CONFLICT` (aggiorna solo se i dati sono più recenti).
+- **Retry con backoff esponenziale** via Tenacity (gestione rate-limit 429/500).
+- **Batch processing** paginato (NVD) e in chunk da 100 (EPSS, per evitare errori 414).
+- **Tracciamento temporale** con `fetched_at` e `updated_at`.
+
+---
+
+## 🧠 Layer 2: Agentic Reasoning Pipeline
+
+Grafo agentico stateful implementato con LangGraph.  
+Ogni nodo ritorna solo i campi aggiornati — il merge è gestito dal framework (pattern corretto per LangGraph).
+
+| Nodo | Funzione |
+|:-----|:---------|
+| `cve_enrichment` | Estrae affected component, attack vector, CWE via Claude Haiku |
+| `risk_scorer` | Calcola risk score composito: CVSS×0.4 + EPSS×0.4 + KEV×0.2 |
+| `asset_matcher` | Correla CVE con inventario asset (CMDB mock), aggiusta risk score per contesto |
+| `attck_mapper` | Mappa su tecniche MITRE ATT&CK con confidence score per tecnica |
+| `critic` | Valida output, attiva reflexion loop (max 2 cicli) se confidence bassa |
+| `report_generator` | Genera report narrativo + JSON strutturato con `risk_adjustment` auditabile |
+| `save_report` | Persiste report su filesystem in `reports/` |
+
+### Esempio di Output
+
+```json
+{
+  "cve_id": "CVE-2025-64446",
+  "vulnerability_name": "Fortinet FortiWeb Path Traversal",
+  "original_risk_score": 0.412,
+  "adjusted_risk_score": 0.4532,
+  "risk_adjustment": {
+    "multiplier_applied": 1.1,
+    "impact_level": "MEDIUM",
+    "rationale": "Asset FW-FORTI-01 impattato. Moltiplicatore 1.1x applicato."
+  },
+  "impacted_assets": ["FW-FORTI-01"],
+  "ttp_mappings": [
+    {"technique_id": "T1190", "name": "Exploit Public-Facing Application", "confidence": 0.9},
+    {"technique_id": "T1059", "name": "Command and Scripting Interpreter", "confidence": 0.8},
+    {"technique_id": "T1068", "name": "Exploitation for Privilege Escalation", "confidence": 0.7}
+  ],
+  "reflexion_cycles": 0
+}
+```
+
+---
+
+## 📐 Layer 3: Storage & Retrieval (Progettato)
+
+Vector database per RAG su documenti tecnici:
+- **ChromaDB** (in-memory o persistent) con embedding `sentence-transformers/all-MiniLM-L6-v2`.
+- Indicizzazione di NIST SP 800, MITRE ATT&CK JSON, advisory vendor.
+- Query semantiche per augmentare i prompt LLM (riduzione allucinazioni su contenuti tecnici specifici).
+- Hybrid search con filtering per metadati (fonte, data, categoria).
+
+---
+
+## 📐 Layer 4: Output STIX 2.1 (Progettato)
+
+Export in formato standard per intelligence sharing:
+- Bundle STIX 2.1 con oggetti `Vulnerability`, `Attack-Pattern`, `Report` e relazioni esplicite (`uses`, `indicates`).
+- Libreria `stix2` per serializzazione e validazione schema.
+- Compatibile con endpoint TAXII per condivisione inter-organizzativa.
 
 ---
 
 ## 🛠️ Stack Tecnico
 
-- **Linguaggio:** Python 3.11+
-- **Agent Framework:** [LangGraph](https://langchain-ai.github.io/langgraph/)
-- **LLM Integration:** [LangChain Anthropic](https://python.langchain.com/docs/integrations/chat/anthropic/) (Claude 3.5 Sonnet & Haiku)
-- **Retry Logic:** [Tenacity](https://tenacity.readthedocs.io/) (Exponential backoff per API HTTP e LLM)
-- **Validazione Dati:** [Pydantic v2](https://docs.pydantic.dev/)
-- **Database:** SQLite
-- **Test:** Pytest, mock, requests-mock
+| Componente | Tecnologia |
+|:-----------|:-----------|
+| Linguaggio | Python 3.11+ |
+| Agent Framework | LangGraph |
+| LLM | Claude 3.5 Sonnet / Claude 3 Haiku (Anthropic) |
+| Data Validation | Pydantic v2 |
+| HTTP Client | Requests + Tenacity (retry/backoff) |
+| Database | SQLite |
+| Testing | Pytest + pytest-mock + requests-mock |
 
 ---
 
-## 💻 Come Iniziare
+## ⚠️ Limitazioni Note (PoC)
 
-### 1. Requisiti
+| Limitazione | Dettaglio |
+|:------------|:----------|
+| **EPSS score** | Usato default `0.05` se non disponibile in `raw_data`. L'integrazione EPSS reale è nel Layer 1 ma richiede join con tabella `epss_scores`. |
+| **Asset inventory** | CMDB mock statico (`assets.json`). Non integrato con CMDB reale. |
+| **Risk scorer** | CVE con CVSS identico e EPSS mancante producono score identici. |
+| **Scope** | Progettato per analisi batch, non real-time streaming. |
+| **ATT&CK mapping** | Basato su LLM, non su similarity search su embeddings (Layer 3). |
+
+---
+
+## 💻 Setup
+
 ```bash
+# Clona e configura ambiente
+git clone <repo>
+cd threat-intel-agent
 python3 -m venv venv
 source venv/bin/activate
+
+# Dipendenze produzione
 pip install -r requirements.txt
+
+# Dipendenze sviluppo e test
+pip install -r requirements-dev.txt
+
+# Variabili d'ambiente
+cp .env.example .env
+# Compila: ANTHROPIC_API_KEY, NVD_API_KEY, ABUSEIPDB_API_KEY
 ```
 
-### 2. Configurazione
-Crea un file `.env` nella root del progetto:
-```env
-ANTHROPIC_API_KEY=tua_chiave_anthropic
-NVD_API_KEY=tua_chiave_opzionale
-ABUSEIPDB_API_KEY=tua_chiave_necessaria_per_IP
-```
+### Esecuzione
 
-### 3. Esecuzione
 ```bash
-# Esegui l'ingestion (Layer 1)
+# Layer 1 — Ingestion
 python3 -m layer1.main
 
-# Esegui l'agente di analisi (Layer 2)
+# Layer 2 — Analisi agentica
 python3 -m layer2.main
 
-# Esegui la suite di test
+# Test suite (31 test)
 pytest
 ```
 
 ---
 
-## 🔮 Visione Futura (Roadmap)
+## 📁 Struttura del Progetto
 
-1.  **📊 Change Tracking (History):** Monitoraggio evolutivo del punteggio CVSS e dello stato KEV.
-2.  **🔔 Notification Engine:** Alert automatici via Webhook o Email per vulnerabilità critiche.
-3.  **🧠 Advanced RAG:** Integrazione con un Vector Database per analisi contestuale su documenti interni.
-4.  **🖥️ Dashboard CLI:** Interfaccia interattiva per interrogare l'agente e visualizzare i report.
+```text
+threat-intel-agent/
+├── layer1/
+│   ├── ingestion/          # NVD, CISA, AbuseIPDB, EPSS
+│   ├── database/           # SQLite con upsert intelligente
+│   ├── utils/              # HTTP client resiliente
+│   └── main.py
+├── layer2/
+│   ├── nodes/              # Nodi del grafo LangGraph
+│   │   ├── cve_enrichment.py
+│   │   ├── risk_scorer.py
+│   │   ├── asset_matcher.py
+│   │   ├── attck_mapper.py
+│   │   ├── critic.py
+│   │   └── report_generator.py
+│   ├── models/
+│   │   └── state.py        # AgentState TypedDict
+│   ├── utils/              # LLM invoker con retry
+│   ├── graph.py            # Definizione grafo e routing
+│   ├── config.py           # Configurazione LLM
+│   └── main.py
+├── tests/
+│   ├── layer1/             # Test ingestion e DB
+│   └── layer2/             # Test logica agentica
+├── assets.json             # CMDB mock
+├── reports/                # Output JSON generati
+├── requirements.txt        # Dipendenze produzione
+├── requirements-dev.txt    # Dipendenze sviluppo/test
+└── .env.example
+```
