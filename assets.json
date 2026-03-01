@@ -1,0 +1,45 @@
+[
+  {
+    "id": "SRV-WIN-01",
+    "name": "Primary Domain Controller",
+    "type": "Server",
+    "os": "Windows Server 2022",
+    "software": [
+      {"name": "Active Directory", "version": "10.0"},
+      {"name": "OpenSSL", "version": "1.1.1t"}
+    ],
+    "tags": ["critical", "identity"]
+  },
+  {
+    "id": "DB-POSTGRE-01",
+    "name": "Customer Data Warehouse",
+    "type": "Database",
+    "os": "Ubuntu 22.04 LTS",
+    "software": [
+      {"name": "PostgreSQL", "version": "14.5"},
+      {"name": "pgAdmin", "version": "6.12"}
+    ],
+    "tags": ["pii", "high-availability"]
+  },
+  {
+    "id": "FW-FORTI-01",
+    "name": "Edge Firewall - Milan HQ",
+    "type": "Firewall",
+    "os": "FortiOS",
+    "software": [
+      {"name": "FortiGate", "version": "7.0.5"}
+    ],
+    "tags": ["perimeter", "network"]
+  },
+  {
+    "id": "APP-WEB-02",
+    "name": "Public API Gateway",
+    "type": "Application Server",
+    "os": "Red Hat Enterprise Linux 8",
+    "software": [
+      {"name": "NGINX", "version": "1.21.6"},
+      {"name": "Node.js", "version": "18.12.1"}
+    ],
+    "tags": ["external", "dmz"]
+  }
+]

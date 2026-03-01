@@ -29,6 +29,10 @@ def critic_node(state: AgentState) -> AgentState:
     if not is_valid:
         logger.warning(f"Critic failed validation. Errors: {errors}")
         state["errors"].extend(errors)
+        # Increment reflexion count only if we are sending it back
+        current_reflexion = state.get("reflexion_count", 0)
+        if current_reflexion < 2:
+            state["reflexion_count"] = current_reflexion + 1
     else:
         logger.info("Critic validation passed.")
         

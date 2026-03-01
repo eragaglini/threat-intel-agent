@@ -1,0 +1,7 @@
+# Eredita tutte le dipendenze di produzione
+-r requirements.txt
+
+# Testing
+pytest==7.3.1
+pytest-mock==3.0.0
+requests-mock==1.12.1
