@@ -150,6 +150,9 @@ cython_debug/
 *.swp
 *.swo
 
+# OS specific
+.DS_Store
+
 # Project specific
 threat_intel.db
 threat_intel.db-journal
