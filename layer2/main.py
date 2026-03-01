@@ -42,13 +42,24 @@ def main():
         for cve in critical_cves:
             cve_id = cve["id"]
             logger.info(f"=== Processing Layer 2 Pipeline for {cve_id} ===")
-            
+
+            # Log EPSS per visibilità immediata
+            epss_val = cve.get("epss_score")
+            if epss_val is not None:
+                logger.info(f"[{cve_id}] EPSS score from DB: {epss_val:.4f}")
+            else:
+                logger.warning(f"[{cve_id}] EPSS score non disponibile nel DB.")
+
             initial_state = AgentState(
                 cve_id=cve_id,
-                raw_data=dict(cve),
+                raw_data=dict(cve),         # ← ora include epss_score grazie al JOIN
                 enriched_data=None,
-                risk_score=0.0,
-                risk_level="",
+                risk_score=None,            # ← None, non 0.0: viene calcolato da risk_scorer
+                risk_level=None,
+                adjusted_risk_score=None,   # ← aggiunto
+                risk_adjustment=None,       # ← aggiunto
+                impacted_assets=[],         # ← aggiunto
+                is_relevant=False,          # ← aggiunto
                 ttp_mappings=[],
                 reflexion_count=0,
                 confidence_scores={"enrichment": 0.0, "attck_mapping": 0.0},
