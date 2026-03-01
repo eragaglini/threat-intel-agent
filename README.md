@@ -6,7 +6,7 @@ Un agente di **Threat Intelligence** modulare progettato per automatizzare l'ing
 
 ## 🚀 Stato Attuale del Progetto
 
-Il progetto ha completato la **Fase 2 (AI Reasoning & Enrichment)**. L'architettura è ora divisa in due livelli:
+Il progetto ha completato la **Fase 2 (AI Reasoning & Enrichment)** con l'implementazione di un grafo agentico avanzato.
 
 ### 🏗️ Layer 1: Ingestion & Storage
 - **NVD (NIST):** Fetching paginato di CVE con supporto completo per CVSS v4.0, v3.1, v3.0 e v2.0.
@@ -16,14 +16,14 @@ Il progetto ha completato la **Fase 2 (AI Reasoning & Enrichment)**. L'architett
 - **Persistenza:** Database **SQLite** locale ottimizzato con logica di Upsert.
 
 ### 🧠 Layer 2: LangGraph Agentic Reasoning
-Un grafo di agenti intelligente che elabora le vulnerabilità attraverso:
-- **CVE Enrichment:** Espansione dei dettagli tecnici tramite LLM (Claude (Haiku)).
-- **Asset Matching:** Correlazione automatica tra vulnerabilità e asset aziendali (CMDB mock).
-- **ATT&CK Mapping:** Mappatura automatica delle vulnerabilità alle tattiche e tecniche MITRE ATT&CK.
-- **Risk Scorer:** Calcolo di un punteggio di rischio dinamico basato su punteggi standard (CVSS, EPSS), contesto reale (KEV) e presenza di asset impattati.
-- **Critic Node:** Validazione e raffinamento autonomo delle analisi prodotte.
-- **Report Generator:** Generazione di report strutturati e pronti all'uso per i team di sicurezza.
-- **Persistence:** Salvataggio automatico dei report generati su file system (JSON).
+Un grafo di agenti intelligente che elabora le vulnerabilità attraverso un flusso di lavoro strutturato:
+1.  **CVE Enrichment:** Espansione dei dettagli tecnici tramite Claude 3 Haiku.
+2.  **Risk Scorer:** Calcolo di un punteggio di rischio dinamico basato su CVSS, EPSS e dati KEV.
+3.  **Asset Matching:** Correlazione automatica con l'inventario asset aziendale (`assets.json`) e ricalcolo del rischio contestuale.
+4.  **ATT&CK Mapping:** Mappatura deterministica e probabilistica alle tecniche MITRE ATT&CK.
+5.  **Critic Node:** Validazione autonoma con cicli di riflessione (fino a 2 tentativi) in caso di bassa confidenza o errori.
+6.  **Report Generator:** Generazione di report narrativi e strutturati per SOC analysts.
+7.  **Persistence:** Salvataggio automatico dei report in formato JSON nella directory `reports/`.
 
 ---
 
@@ -35,7 +35,7 @@ Un grafo di agenti intelligente che elabora le vulnerabilità attraverso:
 - **Retry Logic:** [Tenacity](https://tenacity.readthedocs.io/) (Exponential backoff per API HTTP e LLM)
 - **Validazione Dati:** [Pydantic v2](https://docs.pydantic.dev/)
 - **Database:** SQLite
-- **Test:** Pytest, requests-mock, pytest-mock
+- **Test:** Pytest, mock, requests-mock
 
 ---
 
@@ -76,4 +76,3 @@ pytest
 2.  **🔔 Notification Engine:** Alert automatici via Webhook o Email per vulnerabilità critiche.
 3.  **🧠 Advanced RAG:** Integrazione con un Vector Database per analisi contestuale su documenti interni.
 4.  **🖥️ Dashboard CLI:** Interfaccia interattiva per interrogare l'agente e visualizzare i report.
-
