@@ -162,3 +162,4 @@ GEMINI.md
 *.db-shm
 *.db-wal
 reports/
+layer2_checkpoints.db
